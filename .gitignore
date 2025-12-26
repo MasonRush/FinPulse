@@ -68,3 +68,6 @@ htmlcov/
 # Docker
 .dockerignore
 
+# Documentation (if you want to keep design docs private)
+DESIGNDOC.md
+
