@@ -13,3 +13,6 @@ httpx>=0.25.2
 alembic>=1.12.1
 yfinance>=0.2.0
 
+# Optional: For production rate limiting (recommended)
+# slowapi>=0.1.9
+

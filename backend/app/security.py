@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -12,7 +12,20 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
+# OWASP: Fail securely - require SECRET_KEY in production
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    if os.getenv("ENVIRONMENT") == "production":
+        raise ValueError("SECRET_KEY must be set in production environment")
+    SECRET_KEY = "dev-secret-key-change-in-production"  # Only for development
+    import warnings
+    warnings.warn("Using default SECRET_KEY. This should NEVER be used in production!")
+
+# OWASP: Ensure minimum key length (32+ characters recommended)
+if len(SECRET_KEY) < 32:
+    if os.getenv("ENVIRONMENT") == "production":
+        raise ValueError("SECRET_KEY must be at least 32 characters in production")
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -27,11 +40,13 @@ def get_password_hash(password: str) -> str:
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
+    # OWASP: Use timezone-aware datetime (datetime.utcnow() is deprecated)
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
+        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
     to_encode.update({"exp": expire})
+    # OWASP: JWT with proper algorithm specification
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
